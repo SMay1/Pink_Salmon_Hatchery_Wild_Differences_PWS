@@ -1,26 +1,25 @@
-#Analysis of Hatchery-wild data, tables, and plots for Chapter 1 Manuscript.
-#Origins of this are EO-2013-2018 files, last version of EO's is "EO2013-2018_2-25-20".
-#This will be new take on Ch 1 after talking with Sam May. September 2022
+#Analysis of Hatchery-wild data, tables, and plots for manuscript titled:
+#"Phenotype-assortative dispersal and differences in fitness-linked traits between hatchery and wild pink salmon (Oncorhynchus gorbuscha) in Prince William Sound, Alaska"
 
-setwd("~/GitHub/HW_length_timing/script")
-library(lubridate)## Manipulate dates (4/13/22 still in)
+
+#setwd to source file location
+library(lubridate)## Manipulate dates 
 library(tidyverse)  
 library(DT)       ## To display pretty tables
 library(ggpubr)
 library(AICcmodavg) 
-library(MuMIn)   #Why do I have both Modavg and MuMin?
+library(MuMIn)   #For dredge functionality
 library(minqa)
 library(nloptr)
 library(sjPlot) #plot mixed models
 library(merTools) #for predictInterval
 library(RLRsim) #for likelihood ratio tests
-library(sjPlot)
 library(glmmTMB)
 library(lme4)
 library(viridis)
 
 
-###### Data collating ####
+###### Data sourced from ADF&G###
 HW1320raw <- read.csv("../data/CSVStreamSpeci_2013-2020_9-21-22.csv")
 
 #make dates work for plotting etc.
@@ -110,7 +109,7 @@ TableLengths <- HW1320all %>%
   pivot_wider(names_from = Year, values_from = combined_values) %>%
   arrange(StreamGroup, MarkPresent)
 
-write.csv(TableLengths, "C:\\Users\\jmcmahon5\\Documents\\GitHub\\HW_length_timing\\script\\Figure1TableLengths.csv")
+write.csv(TableLengths, "../figures/Figure1TableLengths.csv")
 
 
 
@@ -170,7 +169,7 @@ StreamLong <- HW1320all %>% group_by(StreamGroup) %>%
          panel.grid.major = element_blank(), 
          panel.grid.minor = element_blank(),
          axis.text.x = element_text(angle=45, vjust=1, hjust=1))
-ggsave("../Figures/FigureS1Length.png", S1Lengths, units = "in", dpi = 600, width = 18, height = 10)
+ggsave("../figures/FigureS1Length.png", S1Lengths, units = "in", dpi = 600, width = 18, height = 10)
 
 #Straying streams, male and female length 
 HW1320all %>% mutate(StreamGroup = factor(StreamGroup, levels = StreamLong$StreamGroup)) %>%  
@@ -191,7 +190,7 @@ HW1320all %>% mutate(StreamGroup = factor(StreamGroup, levels = StreamLong$Strea
 
 
 ##BOXPLOT TIMING #####
-#Figure 2b? Do the 
+#Figure 2b? 
 TimingBox <- 
   ggplot(HW1320all, aes(x = MarkPresent, y = DOY, fill = MarkPresent))+  #fill = Hatchery or fill = MarkPresent both interesting!
   geom_boxplot(width = 0.9,outlier.shape = NA)+
@@ -274,21 +273,6 @@ HWodd <- HW1320all %>% filter( Lineage == "Odd Years")
 ###Which are we using glmer or gmlmTMB
 
 
-
-###### Compare random effects structure  ###########
-#always use maximum likeleyhood (also known as log likelihood?) with linear vs random effects models --  aka REML = FALSE for the random effects model. 
-#**Use Maximum likelyhood (ML) to compare models and Restricted Max likelyhood (REML) to estimate "Best" parameter estimated and confidence intervals.** -See Franz lecture pg. 10
-
-#use stream group as a fixed effect (or visualize the random effect structure of stream group), year as the random effect. -Peter 6/3/2022
-
-
-
-###### Compare Fixed effects structure   ##########
-#Set REML = FALSE to compare models with different fixed effects
-#"Null model" has to have lineage. The variable you're testing as a random slope has to also be a fixed effect for the model to fit the slope. 
-#, control = lmerControl(optimizer="Nelder_Mead")
-#CENTER FOR INTERACTIONS TERMS COMPARISONS: This means that if we center predictors, models the same effect in the data in a model with/without interaction term. This is an attractive property to have when one is interested in comparing models with/without interaction term. https://www.r-bloggers.com/regression-with-interaction-terms-how-centering-predictors-influences-main-effects/
-# Read this for help writing: https://www.theanalysisfactor.com/mixed-models-predictor-both-fixed-random/
 
 ###### Length, timing analyses######
 
@@ -406,7 +390,7 @@ AIC_table_all <- bind_rows(
 
 
 
-#####  OLD Model diagnostics######### still looks fine for selected new models?
+#####  OLD Model diagnostics######### still looks fine for selected new models
 ## reisduals Vs fitted  -looks pretty much fine for whole model
 plot(All_fixmods[[5]]) 
 qqnorm(resid(All_fixmods[[5]]))
@@ -434,12 +418,6 @@ plot(All_fixmods[[5]], Length ~ fitted(.) | StreamGroup, abline = c(0,1))  #I wo
 
 
 ###### Modeling and Model plots############################
-#Model fitting REML = TRUE not FALSE for this part
-#It's statistically the same to have uncentered here - makes plotting easier to not center. 
-
-
-###make one for DOY and one for Length with even/odd combined in both. Facet plots by even/odd later
-
 
 ##CREATE dataframde for LENGTH predictions
 pred_length_even = data.frame(DOYcentered = rep(seq(min(HW1320all$DOYcentered),max(HW1320all$DOYcentered),length.out=7), 4), 
@@ -506,14 +484,6 @@ LengthPlot <-
 
 
 
-#scale_shape_manual(values = c(16,17))
-#lims(y=c(300,550))
-# scale_linetype_manual(values = c(6,6,1,1), name ="", labels = c("Hatchery Female", "Hatchery Male", "Wild Female", "Wild Male")) +
-#  scale_color_manual(values = c("grey46", "black","grey46", "black"), name = "", labels = c("Hatchery Female", "Hatchery Male", "Wild Female", "Wild Male")) +
-# scale_x_discrete(breaks = c(206, 232, 258), labels = c ("Jul 25", "Aug 20","Sept 15")) 
-
-
-
 ###### Timing dataframe for modeling #####
 #Create dataframe for predicting Timing data
 pred_timing_even = data.frame(Length = rep(min(HW1320all$Length):max(HW1320all$Length), 4), 
@@ -538,7 +508,7 @@ pred_timing_odd = data.frame(Length = rep(min(HW1320all$Length):max(HW1320all$Le
                              Year= NA)
 
 #TIMING Predict data using model and fill empty data frame for TIMING
-##EVEN ##HOw do I make an even one then an odd one and then put them
+##EVEN 
 pred_timing_even$DOY <- predict(even_timing_best, newdata=pred_timing_even, allow.new.levels = T, re.form = NA)
 #pred_timing$se.fit <- predict(even_timing_best, newdata=pred_timing, re.form = NA, se.fit = TRUE)$se.fit
 ##ODD##
@@ -549,11 +519,6 @@ pred_timing <- rbind(pred_timing_even, pred_timing_odd)
 #Create confidence intervals
 pred_timing$lwr <- pred_timing$DOY - 1.96*(pred_timing$se.fit) 
 pred_timing$upr <- pred_timing$DOY + 1.96*(pred_timing$se.fit)
-
-#ther's an option to put out a prediction interval here? Joe says that prediction intervals are better for 
-#Interval option : can set to confidence or prediction set to prediction!! then don't have to compute yourself. 
-#SE might tell you more because effect of sample size - but it's often wider than SD. So stick to SE becasue it's a little more useful: Joe
-#can report medians and interquartile ranges or just report the range! 
 
 pred_timing$DOY = pred_timing$DOY*attr(HW1320all$DOYcentered, "scaled:scale") + attr(HW1320all$DOYcentered, "scaled:center")
 ####### PLOT TIMING #####
